@@ -1,0 +1,147 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload</title>
+</head>
+<body>
+    <h1>Upload Two Images</h1>
+    <input type="file" id="file1" accept="image/*" />
+    <input type="file" id="file2" accept="image/*" />
+    <button id="uploadBtn">Upload</button>
+
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const ws = new WebSocket('ws://127.0.0.1:8000/ws/upload/');
+
+        ws.onopen = function() {
+            console.log("WebSocket is open now.");
+        };
+
+        ws.onclose = function(event) {
+            console.log("WebSocket is closed now.", event);
+        };
+
+        ws.onerror = function(error) {
+            console.error("WebSocket error observed:", error);
+        };
+
+        uploadBtn.addEventListener('click', () => {
+            if (ws.readyState !== WebSocket.OPEN) {
+                alert("WebSocket is not open. Please try again.");
+                return;
+            }
+
+            const file1 = document.getElementById('file1').files[0];
+            const file2 = document.getElementById('file2').files[0];
+
+            if (!file1 || !file2) {
+                alert("Please select two images.");
+                return;
+            }
+
+            const reader1 = new FileReader();
+            const reader2 = new FileReader();
+
+            reader1.onloadend = () => {
+                reader2.onloadend = () => {
+                    const data = {
+                        images: [reader1.result, reader2.result]
+                    };
+                    ws.send(JSON.stringify(data));
+                };
+                reader2.readAsDataURL(file2);
+            };
+            reader1.readAsDataURL(file1);
+        });
+
+        ws.onmessage = function(event) {
+            const response = JSON.parse(event.data);
+            console.log(response);
+            alert(response.message || response.error);
+        };
+    </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload</title>
+</head>
+<body>
+    <h1>Upload or Update Images for BlogPost</h1>
+    
+    <label for="postId">BlogPost ID:</label>
+    <input type="number" id="postId" placeholder="Enter BlogPost ID"/>
+    
+    <br /><br />
+    
+    <input type="file" id="file1" accept="image/*" />
+    <input type="file" id="file2" accept="image/*" />
+    <button id="uploadBtn">Upload/Update</button>
+
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const ws = new WebSocket('ws://127.0.0.1:8000/ws/upload/');
+
+        uploadBtn.addEventListener('click', () => {
+            if (ws.readyState !== WebSocket.OPEN) {
+                alert("WebSocket is not open. Please try again.");
+                return;
+            }
+
+            const postId = document.getElementById('postId').value; // Get BlogPost ID from input
+            const file1 = document.getElementById('file1').files[0];
+            const file2 = document.getElementById('file2').files[0];
+
+            // if (!postId) {
+            //     alert("Please enter a BlogPost ID.");
+            //     return;
+            // }
+
+            if (!file1 && !file2) {
+                alert("Please select at least one image.");
+                return;
+            }
+
+            const reader1 = new FileReader();
+            const reader2 = new FileReader();
+
+            const data = { post_id: postId, images: [] };
+
+            if (file1) {
+                reader1.onloadend = () => {
+                    data.images.push(reader1.result);
+                    if (file2) {
+                        reader2.onloadend = () => {
+                            data.images.push(reader2.result);
+                            ws.send(JSON.stringify(data));
+                        };
+                        reader2.readAsDataURL(file2);
+                    } else {
+                        ws.send(JSON.stringify(data));
+                    }
+                };
+                reader1.readAsDataURL(file1);
+            } else if (file2) {
+                reader2.onloadend = () => {
+                    data.images.push(reader2.result);
+                    ws.send(JSON.stringify(data));
+                };
+                reader2.readAsDataURL(file2);
+            }
+        });
+
+        ws.onmessage = function(event) {
+            const response = JSON.parse(event.data);
+            console.log(response);
+            alert(response.message || response.error);
+        };
+    </script>
+</body>
+</html>
